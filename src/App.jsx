@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Trophy, Star, Zap, Target, Shield, Activity, ChevronRight, RotateCcw,
   Flag, HeartPulse, Coins, Gift, Medal, Battery, Smile, Users, Heart,
-  Mic, Moon, PartyPopper, Sparkles, Newspaper, Baby, Home, Sun, Dumbbell, CircleDot, Lock
+  Mic, Moon, PartyPopper, Sparkles, Newspaper, Baby, Home, Sun, Dumbbell, CircleDot, Lock, Palette
 } from "lucide-react";
 
 // ---------- Data ----------
@@ -81,6 +81,13 @@ const INTENSITY = {
   yogun: { label: "Yoğun", boost: [2, 4], energy: 15, risk: 0.06, desc: "Yüksek gelişim, sakatlık riski" },
 };
 
+const ENERGY_DRINKS = [
+  { name: "Küçük İçecek", cost: 40, energy: 20 },
+  { name: "Orta İçecek", cost: 60, energy: 40 },
+  { name: "Büyük İçecek", cost: 80, energy: 60 },
+  { name: "Mega İçecek", cost: 100, energy: 100 },
+];
+
 const DARK = {
   app: "bg-slate-950", blob1: "bg-emerald-600/20", blob2: "bg-amber-600/10",
   headerLabel: "text-emerald-400/70", headerTitle: "text-white",
@@ -112,6 +119,123 @@ const LIGHT = {
   tableRow: "bg-slate-50", tableRowPlayer: "bg-amber-50 border border-amber-400",
   footer: "text-slate-400", chunkySlate: "bg-slate-200 border-slate-400 text-slate-700",
   scoreBox: "bg-slate-50 border border-slate-200", barTrack: "bg-slate-200",
+};
+
+const ACCENT_NAMES = {
+  rose: "Gül", pink: "Pembe", fuchsia: "Fuşya", purple: "Mor", violet: "Menekşe",
+  indigo: "Çivit", blue: "Mavi", sky: "Gök Mavisi", cyan: "Camgöbeği", teal: "Turkuaz",
+  emerald: "Zümrüt", green: "Yeşil", lime: "Fıstık Yeşili", yellow: "Sarı", amber: "Kehribar",
+  orange: "Turuncu", red: "Kırmızı", stone: "Taş Grisi", zinc: "Çinko Grisi", slate: "Arduvaz",
+};
+
+const SWATCH = {
+  rose: "bg-rose-400", pink: "bg-pink-400", fuchsia: "bg-fuchsia-400", purple: "bg-purple-400", violet: "bg-violet-400",
+  indigo: "bg-indigo-400", blue: "bg-blue-400", sky: "bg-sky-400", cyan: "bg-cyan-400", teal: "bg-teal-400",
+  emerald: "bg-emerald-400", green: "bg-green-400", lime: "bg-lime-400", yellow: "bg-yellow-400", amber: "bg-amber-400",
+  orange: "bg-orange-400", red: "bg-red-400", stone: "bg-stone-400", zinc: "bg-zinc-400", slate: "bg-slate-400",
+};
+
+const ACCENTS = {
+  rose: {
+    dark: { label: "text-rose-400", active: "bg-rose-500/20 border-rose-500 text-rose-300", rowPlayer: "bg-rose-500/10 border border-rose-500/50", offerBox: "bg-rose-500/10 border-2 border-rose-500/40", blob: "bg-rose-600/20" },
+    light: { label: "text-rose-600", active: "bg-rose-50 border-rose-500 text-rose-700", rowPlayer: "bg-rose-50 border border-rose-400", offerBox: "bg-rose-50 border-2 border-rose-300", blob: "bg-rose-300/30" },
+    btn: "bg-rose-400 border-rose-700 text-slate-950", selected: "bg-rose-400 text-slate-950 border-rose-500",
+  },
+  pink: {
+    dark: { label: "text-pink-400", active: "bg-pink-500/20 border-pink-500 text-pink-300", rowPlayer: "bg-pink-500/10 border border-pink-500/50", offerBox: "bg-pink-500/10 border-2 border-pink-500/40", blob: "bg-pink-600/20" },
+    light: { label: "text-pink-600", active: "bg-pink-50 border-pink-500 text-pink-700", rowPlayer: "bg-pink-50 border border-pink-400", offerBox: "bg-pink-50 border-2 border-pink-300", blob: "bg-pink-300/30" },
+    btn: "bg-pink-400 border-pink-700 text-slate-950", selected: "bg-pink-400 text-slate-950 border-pink-500",
+  },
+  fuchsia: {
+    dark: { label: "text-fuchsia-400", active: "bg-fuchsia-500/20 border-fuchsia-500 text-fuchsia-300", rowPlayer: "bg-fuchsia-500/10 border border-fuchsia-500/50", offerBox: "bg-fuchsia-500/10 border-2 border-fuchsia-500/40", blob: "bg-fuchsia-600/20" },
+    light: { label: "text-fuchsia-600", active: "bg-fuchsia-50 border-fuchsia-500 text-fuchsia-700", rowPlayer: "bg-fuchsia-50 border border-fuchsia-400", offerBox: "bg-fuchsia-50 border-2 border-fuchsia-300", blob: "bg-fuchsia-300/30" },
+    btn: "bg-fuchsia-400 border-fuchsia-700 text-slate-950", selected: "bg-fuchsia-400 text-slate-950 border-fuchsia-500",
+  },
+  purple: {
+    dark: { label: "text-purple-400", active: "bg-purple-500/20 border-purple-500 text-purple-300", rowPlayer: "bg-purple-500/10 border border-purple-500/50", offerBox: "bg-purple-500/10 border-2 border-purple-500/40", blob: "bg-purple-600/20" },
+    light: { label: "text-purple-600", active: "bg-purple-50 border-purple-500 text-purple-700", rowPlayer: "bg-purple-50 border border-purple-400", offerBox: "bg-purple-50 border-2 border-purple-300", blob: "bg-purple-300/30" },
+    btn: "bg-purple-400 border-purple-700 text-slate-950", selected: "bg-purple-400 text-slate-950 border-purple-500",
+  },
+  violet: {
+    dark: { label: "text-violet-400", active: "bg-violet-500/20 border-violet-500 text-violet-300", rowPlayer: "bg-violet-500/10 border border-violet-500/50", offerBox: "bg-violet-500/10 border-2 border-violet-500/40", blob: "bg-violet-600/20" },
+    light: { label: "text-violet-600", active: "bg-violet-50 border-violet-500 text-violet-700", rowPlayer: "bg-violet-50 border border-violet-400", offerBox: "bg-violet-50 border-2 border-violet-300", blob: "bg-violet-300/30" },
+    btn: "bg-violet-400 border-violet-700 text-slate-950", selected: "bg-violet-400 text-slate-950 border-violet-500",
+  },
+  indigo: {
+    dark: { label: "text-indigo-400", active: "bg-indigo-500/20 border-indigo-500 text-indigo-300", rowPlayer: "bg-indigo-500/10 border border-indigo-500/50", offerBox: "bg-indigo-500/10 border-2 border-indigo-500/40", blob: "bg-indigo-600/20" },
+    light: { label: "text-indigo-600", active: "bg-indigo-50 border-indigo-500 text-indigo-700", rowPlayer: "bg-indigo-50 border border-indigo-400", offerBox: "bg-indigo-50 border-2 border-indigo-300", blob: "bg-indigo-300/30" },
+    btn: "bg-indigo-400 border-indigo-700 text-slate-950", selected: "bg-indigo-400 text-slate-950 border-indigo-500",
+  },
+  blue: {
+    dark: { label: "text-blue-400", active: "bg-blue-500/20 border-blue-500 text-blue-300", rowPlayer: "bg-blue-500/10 border border-blue-500/50", offerBox: "bg-blue-500/10 border-2 border-blue-500/40", blob: "bg-blue-600/20" },
+    light: { label: "text-blue-600", active: "bg-blue-50 border-blue-500 text-blue-700", rowPlayer: "bg-blue-50 border border-blue-400", offerBox: "bg-blue-50 border-2 border-blue-300", blob: "bg-blue-300/30" },
+    btn: "bg-blue-400 border-blue-700 text-slate-950", selected: "bg-blue-400 text-slate-950 border-blue-500",
+  },
+  sky: {
+    dark: { label: "text-sky-400", active: "bg-sky-500/20 border-sky-500 text-sky-300", rowPlayer: "bg-sky-500/10 border border-sky-500/50", offerBox: "bg-sky-500/10 border-2 border-sky-500/40", blob: "bg-sky-600/20" },
+    light: { label: "text-sky-600", active: "bg-sky-50 border-sky-500 text-sky-700", rowPlayer: "bg-sky-50 border border-sky-400", offerBox: "bg-sky-50 border-2 border-sky-300", blob: "bg-sky-300/30" },
+    btn: "bg-sky-400 border-sky-700 text-slate-950", selected: "bg-sky-400 text-slate-950 border-sky-500",
+  },
+  cyan: {
+    dark: { label: "text-cyan-400", active: "bg-cyan-500/20 border-cyan-500 text-cyan-300", rowPlayer: "bg-cyan-500/10 border border-cyan-500/50", offerBox: "bg-cyan-500/10 border-2 border-cyan-500/40", blob: "bg-cyan-600/20" },
+    light: { label: "text-cyan-600", active: "bg-cyan-50 border-cyan-500 text-cyan-700", rowPlayer: "bg-cyan-50 border border-cyan-400", offerBox: "bg-cyan-50 border-2 border-cyan-300", blob: "bg-cyan-300/30" },
+    btn: "bg-cyan-400 border-cyan-700 text-slate-950", selected: "bg-cyan-400 text-slate-950 border-cyan-500",
+  },
+  teal: {
+    dark: { label: "text-teal-400", active: "bg-teal-500/20 border-teal-500 text-teal-300", rowPlayer: "bg-teal-500/10 border border-teal-500/50", offerBox: "bg-teal-500/10 border-2 border-teal-500/40", blob: "bg-teal-600/20" },
+    light: { label: "text-teal-600", active: "bg-teal-50 border-teal-500 text-teal-700", rowPlayer: "bg-teal-50 border border-teal-400", offerBox: "bg-teal-50 border-2 border-teal-300", blob: "bg-teal-300/30" },
+    btn: "bg-teal-400 border-teal-700 text-slate-950", selected: "bg-teal-400 text-slate-950 border-teal-500",
+  },
+  emerald: {
+    dark: { label: "text-emerald-400", active: "bg-emerald-500/20 border-emerald-500 text-emerald-300", rowPlayer: "bg-emerald-500/10 border border-emerald-500/50", offerBox: "bg-emerald-500/10 border-2 border-emerald-500/40", blob: "bg-emerald-600/20" },
+    light: { label: "text-emerald-600", active: "bg-emerald-50 border-emerald-500 text-emerald-700", rowPlayer: "bg-emerald-50 border border-emerald-400", offerBox: "bg-emerald-50 border-2 border-emerald-300", blob: "bg-emerald-300/30" },
+    btn: "bg-emerald-400 border-emerald-700 text-slate-950", selected: "bg-emerald-400 text-slate-950 border-emerald-500",
+  },
+  green: {
+    dark: { label: "text-green-400", active: "bg-green-500/20 border-green-500 text-green-300", rowPlayer: "bg-green-500/10 border border-green-500/50", offerBox: "bg-green-500/10 border-2 border-green-500/40", blob: "bg-green-600/20" },
+    light: { label: "text-green-600", active: "bg-green-50 border-green-500 text-green-700", rowPlayer: "bg-green-50 border border-green-400", offerBox: "bg-green-50 border-2 border-green-300", blob: "bg-green-300/30" },
+    btn: "bg-green-400 border-green-700 text-slate-950", selected: "bg-green-400 text-slate-950 border-green-500",
+  },
+  lime: {
+    dark: { label: "text-lime-400", active: "bg-lime-500/20 border-lime-500 text-lime-300", rowPlayer: "bg-lime-500/10 border border-lime-500/50", offerBox: "bg-lime-500/10 border-2 border-lime-500/40", blob: "bg-lime-600/20" },
+    light: { label: "text-lime-600", active: "bg-lime-50 border-lime-500 text-lime-700", rowPlayer: "bg-lime-50 border border-lime-400", offerBox: "bg-lime-50 border-2 border-lime-300", blob: "bg-lime-300/30" },
+    btn: "bg-lime-400 border-lime-700 text-slate-950", selected: "bg-lime-400 text-slate-950 border-lime-500",
+  },
+  yellow: {
+    dark: { label: "text-yellow-400", active: "bg-yellow-500/20 border-yellow-500 text-yellow-300", rowPlayer: "bg-yellow-500/10 border border-yellow-500/50", offerBox: "bg-yellow-500/10 border-2 border-yellow-500/40", blob: "bg-yellow-600/20" },
+    light: { label: "text-yellow-600", active: "bg-yellow-50 border-yellow-500 text-yellow-700", rowPlayer: "bg-yellow-50 border border-yellow-400", offerBox: "bg-yellow-50 border-2 border-yellow-300", blob: "bg-yellow-300/30" },
+    btn: "bg-yellow-400 border-yellow-700 text-slate-950", selected: "bg-yellow-400 text-slate-950 border-yellow-500",
+  },
+  amber: {
+    dark: { label: "text-amber-400", active: "bg-amber-500/20 border-amber-500 text-amber-300", rowPlayer: "bg-amber-500/10 border border-amber-500/50", offerBox: "bg-amber-500/10 border-2 border-amber-500/40", blob: "bg-amber-600/20" },
+    light: { label: "text-amber-600", active: "bg-amber-50 border-amber-500 text-amber-700", rowPlayer: "bg-amber-50 border border-amber-400", offerBox: "bg-amber-50 border-2 border-amber-300", blob: "bg-amber-300/30" },
+    btn: "bg-amber-400 border-amber-700 text-slate-950", selected: "bg-amber-400 text-slate-950 border-amber-500",
+  },
+  orange: {
+    dark: { label: "text-orange-400", active: "bg-orange-500/20 border-orange-500 text-orange-300", rowPlayer: "bg-orange-500/10 border border-orange-500/50", offerBox: "bg-orange-500/10 border-2 border-orange-500/40", blob: "bg-orange-600/20" },
+    light: { label: "text-orange-600", active: "bg-orange-50 border-orange-500 text-orange-700", rowPlayer: "bg-orange-50 border border-orange-400", offerBox: "bg-orange-50 border-2 border-orange-300", blob: "bg-orange-300/30" },
+    btn: "bg-orange-400 border-orange-700 text-slate-950", selected: "bg-orange-400 text-slate-950 border-orange-500",
+  },
+  red: {
+    dark: { label: "text-red-400", active: "bg-red-500/20 border-red-500 text-red-300", rowPlayer: "bg-red-500/10 border border-red-500/50", offerBox: "bg-red-500/10 border-2 border-red-500/40", blob: "bg-red-600/20" },
+    light: { label: "text-red-600", active: "bg-red-50 border-red-500 text-red-700", rowPlayer: "bg-red-50 border border-red-400", offerBox: "bg-red-50 border-2 border-red-300", blob: "bg-red-300/30" },
+    btn: "bg-red-400 border-red-700 text-slate-950", selected: "bg-red-400 text-slate-950 border-red-500",
+  },
+  stone: {
+    dark: { label: "text-stone-400", active: "bg-stone-500/20 border-stone-500 text-stone-300", rowPlayer: "bg-stone-500/10 border border-stone-500/50", offerBox: "bg-stone-500/10 border-2 border-stone-500/40", blob: "bg-stone-600/20" },
+    light: { label: "text-stone-600", active: "bg-stone-50 border-stone-500 text-stone-700", rowPlayer: "bg-stone-50 border border-stone-400", offerBox: "bg-stone-50 border-2 border-stone-300", blob: "bg-stone-300/30" },
+    btn: "bg-stone-400 border-stone-700 text-slate-950", selected: "bg-stone-400 text-slate-950 border-stone-500",
+  },
+  zinc: {
+    dark: { label: "text-zinc-400", active: "bg-zinc-500/20 border-zinc-500 text-zinc-300", rowPlayer: "bg-zinc-500/10 border border-zinc-500/50", offerBox: "bg-zinc-500/10 border-2 border-zinc-500/40", blob: "bg-zinc-600/20" },
+    light: { label: "text-zinc-600", active: "bg-zinc-50 border-zinc-500 text-zinc-700", rowPlayer: "bg-zinc-50 border border-zinc-400", offerBox: "bg-zinc-50 border-2 border-zinc-300", blob: "bg-zinc-300/30" },
+    btn: "bg-zinc-400 border-zinc-700 text-slate-950", selected: "bg-zinc-400 text-slate-950 border-zinc-500",
+  },
+  slate: {
+    dark: { label: "text-slate-400", active: "bg-slate-500/20 border-slate-500 text-slate-300", rowPlayer: "bg-slate-500/10 border border-slate-500/50", offerBox: "bg-slate-500/10 border-2 border-slate-500/40", blob: "bg-slate-600/20" },
+    light: { label: "text-slate-600", active: "bg-slate-50 border-slate-500 text-slate-700", rowPlayer: "bg-slate-50 border border-slate-400", offerBox: "bg-slate-50 border-2 border-slate-300", blob: "bg-slate-300/30" },
+    btn: "bg-slate-400 border-slate-700 text-slate-950", selected: "bg-slate-400 text-slate-950 border-slate-500",
+  },
 };
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -230,7 +354,7 @@ function applyLifeActivity(key, life, rel) {
 
 function Chunky({ children, onClick, disabled, color = "amber", t, className = "" }) {
   const palette = {
-    amber: "bg-amber-400 border-amber-700 text-slate-950",
+    amber: t.chunkyAccent,
     green: "bg-emerald-500 border-emerald-800 text-slate-950",
     sky: "bg-sky-500 border-sky-800 text-slate-950",
     slate: t.chunkySlate,
@@ -338,8 +462,29 @@ function FormChips({ log }) {
 }
 
 export default function FutbolcuKariyeri() {
-  const [theme, setTheme] = useState("dark");
-  const t = theme === "dark" ? DARK : LIGHT;
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("kk-theme") || "dark"; } catch { return "dark"; }
+  });
+  const [accent, setAccent] = useState(() => {
+    try { return localStorage.getItem("kk-accent") || "amber"; } catch { return "amber"; }
+  });
+  function chooseTheme(next) {
+    setTheme(next);
+    try { localStorage.setItem("kk-theme", next); } catch {}
+  }
+  function chooseAccent(next) {
+    setAccent(next);
+    try { localStorage.setItem("kk-accent", next); } catch {}
+  }
+  const a = ACCENTS[accent] || ACCENTS.amber;
+  const aMode = a[theme];
+  const t = {
+    ...(theme === "dark" ? DARK : LIGHT),
+    label: aMode.label, headerLabel: aMode.label,
+    btnActive: aMode.active, tableRowPlayer: aMode.rowPlayer,
+    blob1: aMode.blob, blob2: aMode.blob,
+    offerBox: aMode.offerBox, chunkyAccent: a.btn, chunkySelected: a.selected,
+  };
 
   const [phase, setPhase] = useState("home");
   const [homeReturnPhase, setHomeReturnPhase] = useState("youth");
@@ -417,6 +562,13 @@ export default function FutbolcuKariyeri() {
     setPlayer({ ...player, stats });
     setCoins((c) => c - cost);
     setPackUsed(true);
+  }
+
+  function buyEnergyDrink(idx) {
+    const d = ENERGY_DRINKS[idx];
+    if (coins < d.cost || life.enerji >= 100) return;
+    setCoins((c) => c - d.cost);
+    setLife((l) => ({ ...l, enerji: clamp(l.enerji + d.energy, 0, 100) }));
   }
 
   function playYouthSeason() {
@@ -649,7 +801,7 @@ export default function FutbolcuKariyeri() {
                 </div>
               </>
             )}
-            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className={`${t.iconBtn} rounded-full p-2`}>
+            <button onClick={() => chooseTheme(theme === "dark" ? "light" : "dark")} className={`${t.iconBtn} rounded-full p-2`}>
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
@@ -677,6 +829,24 @@ export default function FutbolcuKariyeri() {
             </Panel>
 
             <Panel t={t}>
+              <p className={`flex items-center gap-1.5 text-xs uppercase tracking-widest ${t.label} font-bold mb-3`}><Palette className="w-3.5 h-3.5" /> Tema Rengi</p>
+              <div className="grid grid-cols-5 gap-2.5">
+                {Object.keys(ACCENTS).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => chooseAccent(c)}
+                    title={ACCENT_NAMES[c]}
+                    className={`w-9 h-9 rounded-full ${SWATCH[c]} flex items-center justify-center transition ${accent === c ? "ring-2 ring-offset-2 ring-slate-400" : ""}`}
+                    style={accent === c ? { boxShadow: theme === "dark" ? "0 0 0 2px #020617" : "0 0 0 2px #ffffff" } : undefined}
+                  >
+                    {accent === c && <span className="w-2.5 h-2.5 rounded-full bg-slate-950/60" />}
+                  </button>
+                ))}
+              </div>
+              <p className={`text-[11px] ${t.textFaint} mt-3`}>Seçili renk: <b className={t.textSub}>{ACCENT_NAMES[accent]}</b></p>
+            </Panel>
+
+            <Panel t={t}>
               <button onClick={() => setShowHelp((v) => !v)} className={`w-full flex items-center justify-between text-xs uppercase tracking-widest ${t.label} font-bold`}>
                 Nasıl Oynanır? <ChevronRight className={`w-4 h-4 transition-transform ${showHelp ? "rotate-90" : ""}`} />
               </button>
@@ -686,7 +856,7 @@ export default function FutbolcuKariyeri() {
                   <li>Her hafta önce antrenman yap, sonra maça çık.</li>
                   <li>Antrenman yoğunluğu arttıkça gelişim de sakatlık riski de artar.</li>
                   <li>Kaleci seçersen antrenman seçenekleri kaleciye özel isimlerle gelir.</li>
-                  <li>Enerjin ve mutluluğun maç performansını doğrudan etkiler.</li>
+                  <li>Enerjin ve mutluluğun maç performansını doğrudan etkiler; sezon içinde enerji içeceği alabilirsin.</li>
                   <li>Sezon sonunda özel hayatına vakit ayır: dinlen, röportaj ver ya da biriyle buluş.</li>
                   <li>Ligde şampiyon ol, transfer teklifi al, milli takıma çağrıl.</li>
                   <li>35 yaşında emekli ol ve kariyer ünvanını öğren.</li>
@@ -744,7 +914,7 @@ export default function FutbolcuKariyeri() {
                 const active = chosenTeam && chosenTeam.name === tm.name;
                 return (
                   <button key={tm.name} disabled={locked} onClick={() => setChosenTeam(tm)}
-                    className={`flex flex-col items-start gap-1 rounded-xl px-3 py-2.5 border-2 text-left transition disabled:opacity-35 ${active ? "bg-amber-400/20 border-amber-500" : t.btnInactive}`}>
+                    className={`flex flex-col items-start gap-1 rounded-xl px-3 py-2.5 border-2 text-left transition disabled:opacity-35 ${active ? t.btnActive : t.btnInactive}`}>
                     <span className={`text-xs font-black ${t.textMain}`}>{tm.name}</span>
                     <span className="flex items-center gap-1">
                       <StarRow count={tm.stars} />
@@ -767,7 +937,7 @@ export default function FutbolcuKariyeri() {
               <p className={`text-sm ${t.textSub} mb-3`}>Henüz profesyonel değilsin. Bu sezon bir özelliğine odaklan.</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {STAT_KEYS.map((k) => (
-                  <button key={k} onClick={() => setTrainingFocus(k)} className={`rounded-xl py-2 text-xs font-black border-2 transition ${trainingFocus === k ? "bg-amber-400 text-slate-950 border-amber-500" : t.btnInactive}`}>{trainLabel(k, position)}</button>
+                  <button key={k} onClick={() => setTrainingFocus(k)} className={`rounded-xl py-2 text-xs font-black border-2 transition ${trainingFocus === k ? t.chunkySelected : t.btnInactive}`}>{trainLabel(k, position)}</button>
                 ))}
               </div>
               <Chunky t={t} onClick={playYouthSeason} color="green">Sezonu Tamamla <ChevronRight className="w-4 h-4" /></Chunky>
@@ -796,10 +966,28 @@ export default function FutbolcuKariyeri() {
             </Panel>
 
             <Panel t={t}>
+              <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-3 flex items-center gap-1.5`}><Battery className="w-3.5 h-3.5" /> Enerji İçecekleri</p>
+              <div className="grid grid-cols-2 gap-2">
+                {ENERGY_DRINKS.map((d, i) => {
+                  const disabled = coins < d.cost || life.enerji >= 100;
+                  return (
+                    <button key={i} onClick={() => buyEnergyDrink(i)} disabled={disabled}
+                      className={`flex flex-col items-start gap-1 rounded-xl px-3 py-2.5 border-2 text-left transition disabled:opacity-35 ${t.btnInactive}`}>
+                      <span className={`text-xs font-black ${t.textMain}`}>{d.name}</span>
+                      <span className={`text-[11px] ${t.textFaint}`}>+{d.energy} enerji</span>
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400"><Coins className="w-3 h-3" />{d.cost}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {life.enerji >= 100 && <p className={`text-[11px] ${t.textFaint} mt-2`}>Enerjin zaten dolu.</p>}
+            </Panel>
+
+            <Panel t={t}>
               <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-3 flex items-center gap-1.5`}><Dumbbell className="w-3.5 h-3.5" /> Antrenman Odağı</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {STAT_KEYS.map((k) => (
-                  <button key={k} onClick={() => setTrainingFocus(k)} className={`rounded-xl py-2 text-xs font-black border-2 transition ${trainingFocus === k ? "bg-amber-400 text-slate-950 border-amber-500" : t.btnInactive}`}>{trainLabel(k, position)}</button>
+                  <button key={k} onClick={() => setTrainingFocus(k)} className={`rounded-xl py-2 text-xs font-black border-2 transition ${trainingFocus === k ? t.chunkySelected : t.btnInactive}`}>{trainLabel(k, position)}</button>
                 ))}
               </div>
               <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-3`}>Yoğunluk</p>
@@ -972,13 +1160,13 @@ export default function FutbolcuKariyeri() {
 
         {phase === "transfer" && offer && player && (
           <Panel t={t}>
-            <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1">Transfer Teklifi</p>
+            <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-1`}>Transfer Teklifi</p>
             <h2 className={`text-lg font-black ${t.textMain} mb-4`}>{offer.club} seni istiyor!</h2>
             <div className={`flex items-center justify-between ${t.panelAlt2} rounded-xl px-3 py-2.5 mb-2`}>
               <span className={`text-sm ${t.textFaint} font-bold`}>Mevcut</span><span className={`text-sm font-black ${t.textSub}`}>{player.club} · {tierData(player.country, player.tier).name}</span>
             </div>
-            <div className="flex items-center justify-between bg-amber-500/10 border-2 border-amber-500/40 rounded-xl px-3 py-2.5 mb-2">
-              <span className="text-sm text-amber-400 font-bold">Yeni Teklif</span><span className="text-sm font-black text-amber-300">{offer.club} · {tierData(player.country, offer.toTier).name}</span>
+            <div className={`flex items-center justify-between ${t.offerBox} rounded-xl px-3 py-2.5 mb-2`}>
+              <span className={`text-sm ${t.label} font-bold`}>Yeni Teklif</span><span className={`text-sm font-black ${t.label}`}>{offer.club} · {tierData(player.country, offer.toTier).name}</span>
             </div>
             <div className="flex items-center gap-2 mb-4"><StarRow count={offer.stars} /><span className={`text-[11px] ${t.textFaint}`}>kulüp prestiji</span></div>
             <div className={`flex items-center gap-1.5 mb-6 text-sm ${t.textFaint} font-semibold`}>Yeni sezonluk ücret: {money(offer.wage)}</div>
@@ -1031,4 +1219,4 @@ export default function FutbolcuKariyeri() {
       </div>
     </div>
   );
-}
+           }
