@@ -10,6 +10,7 @@ const STAT_LABELS = { hiz: "HIZ", sut: "ŞUT", pas: "PAS", dribbling: "DRB", def
 const GK_LABELS = { hiz: "ÇEVİKLİK", sut: "ÇIKIŞ", pas: "DAĞITIM", dribbling: "REFLEKS", defans: "KURTARIŞ", fizik: "FZK" };
 const STAT_KEYS = Object.keys(STAT_LABELS);
 const TOTAL_ROUNDS = 6;
+const SEASON_WEEKS = 34; // her ligin gerçek sezon uzunluğu — puan tablosu buna göre ölçeklenir
 
 const POSITIONS = {
   FW: { label: "Forvet", icon: Target, weights: { hiz: .2, sut: .35, pas: .1, dribbling: .2, defans: .05, fizik: .1 }, goalFactor: .45, assistFactor: .15 },
@@ -18,51 +19,84 @@ const POSITIONS = {
   GK: { label: "Kaleci", icon: Activity, weights: { hiz: .05, sut: .05, pas: .1, dribbling: .05, defans: .55, fizik: .2 }, goalFactor: .01, assistFactor: .02 },
 };
 
+// Ülke / lig / takım veri seti — 2026-27 sezonuna göre güncel takımlar ve gerçek lig boyutları.
 const COUNTRIES = {
   TR: {
     name: "Türkiye",
     tiers: [
-      { name: "1. Lig", wageBase: 3000, teams: [
-        { name: "Boluspor", stars: 2 }, { name: "Manisa FK", stars: 2 }, { name: "Ankaragücü", stars: 3 },
-        { name: "Erzurumspor", stars: 2 }, { name: "Adanaspor", stars: 2 }, { name: "Bandırmaspor", stars: 2 },
-        { name: "Sakaryaspor", stars: 2 }, { name: "Pendikspor", stars: 3 },
-      ]},
-      { name: "Süper Lig", wageBase: 40000, teams: [
-        { name: "Galatasaray", stars: 5 }, { name: "Fenerbahçe", stars: 5 }, { name: "Beşiktaş", stars: 4 }, { name: "Trabzonspor", stars: 4 },
-        { name: "Başakşehir", stars: 3 }, { name: "Konyaspor", stars: 2 }, { name: "Kayserispor", stars: 2 }, { name: "Sivasspor", stars: 2 },
-        { name: "Alanyaspor", stars: 2 }, { name: "Antalyaspor", stars: 2 }, { name: "Gaziantep FK", stars: 2 }, { name: "Kasımpaşa", stars: 2 },
-      ]},
+      {
+        name: "Trendyol 1. Lig", wageBase: 3000,
+        teams: [
+          { name: "Antalyaspor", stars: 3 }, { name: "Kayserispor", stars: 3 }, { name: "Fatih Karagümrük", stars: 3 }, { name: "Bursaspor", stars: 3 },
+          { name: "Boluspor", stars: 2 }, { name: "Manisa FK", stars: 2 }, { name: "Sivasspor", stars: 2 }, { name: "Pendikspor", stars: 2 },
+          { name: "İstanbulspor", stars: 2 }, { name: "Ümraniyespor", stars: 2 }, { name: "Bandırmaspor", stars: 2 }, { name: "Sarıyer", stars: 2 },
+          { name: "Keçiörengücü", stars: 2 }, { name: "Bodrum FK", stars: 2 }, { name: "Vanspor FK", stars: 2 }, { name: "Iğdır FK", stars: 2 },
+          { name: "Batman Petrolspor", stars: 2 }, { name: "Mardin 1969 Spor", stars: 2 }, { name: "Muğlaspor", stars: 2 },
+        ],
+      },
+      {
+        name: "Trendyol Süper Lig", wageBase: 40000,
+        teams: [
+          { name: "Galatasaray", stars: 5 }, { name: "Fenerbahçe", stars: 5 }, { name: "Beşiktaş", stars: 4 }, { name: "Trabzonspor", stars: 4 },
+          { name: "Başakşehir", stars: 3 }, { name: "Samsunspor", stars: 3 }, { name: "Göztepe", stars: 3 },
+          { name: "Konyaspor", stars: 2 }, { name: "Kasımpaşa", stars: 2 }, { name: "Eyüpspor", stars: 2 }, { name: "Çaykur Rizespor", stars: 2 },
+          { name: "Kocaelispor", stars: 2 }, { name: "Alanyaspor", stars: 2 }, { name: "Gaziantep FK", stars: 2 }, { name: "Gençlerbirliği", stars: 2 },
+          { name: "Erzurumspor FK", stars: 2 }, { name: "Amed Sportif Faaliyetler", stars: 2 }, { name: "Çorum FK", stars: 2 },
+        ],
+      },
     ],
   },
   EN: {
     name: "İngiltere",
     tiers: [
-      { name: "Championship", wageBase: 5000, teams: [
-        { name: "Leeds United", stars: 3 }, { name: "Leicester City", stars: 3 }, { name: "Southampton", stars: 3 },
-        { name: "West Brom", stars: 2 }, { name: "Norwich City", stars: 2 }, { name: "Sunderland", stars: 2 },
-        { name: "Middlesbrough", stars: 2 }, { name: "Coventry City", stars: 2 },
-      ]},
-      { name: "Premier League", wageBase: 90000, teams: [
-        { name: "Manchester City", stars: 5 }, { name: "Arsenal", stars: 5 }, { name: "Liverpool", stars: 5 }, { name: "Manchester United", stars: 5 },
-        { name: "Chelsea", stars: 4 }, { name: "Tottenham", stars: 4 }, { name: "Newcastle United", stars: 4 },
-        { name: "Aston Villa", stars: 3 }, { name: "Brighton", stars: 3 }, { name: "West Ham United", stars: 3 },
-        { name: "Everton", stars: 2 }, { name: "Crystal Palace", stars: 2 }, { name: "Fulham", stars: 2 }, { name: "Wolves", stars: 2 },
-      ]},
+      {
+        name: "EFL Championship", wageBase: 5000,
+        teams: [
+          { name: "West Ham United", stars: 4 }, { name: "Wolverhampton Wanderers", stars: 4 },
+          { name: "Burnley", stars: 3 }, { name: "Sheffield United", stars: 3 }, { name: "Middlesbrough", stars: 3 }, { name: "West Bromwich Albion", stars: 3 },
+          { name: "Norwich City", stars: 3 }, { name: "Southampton", stars: 3 },
+          { name: "Birmingham City", stars: 2 }, { name: "Queens Park Rangers", stars: 2 }, { name: "Bristol City", stars: 2 }, { name: "Derby County", stars: 2 },
+          { name: "Stoke City", stars: 2 }, { name: "Cardiff City", stars: 2 }, { name: "Millwall", stars: 2 }, { name: "Lincoln City", stars: 2 },
+          { name: "Portsmouth", stars: 2 }, { name: "Bolton Wanderers", stars: 2 }, { name: "Swansea City", stars: 2 }, { name: "Watford", stars: 2 },
+          { name: "Charlton Athletic", stars: 2 }, { name: "Blackburn Rovers", stars: 2 }, { name: "Wrexham", stars: 2 }, { name: "Preston North End", stars: 2 },
+        ],
+      },
+      {
+        name: "Premier League", wageBase: 90000,
+        teams: [
+          { name: "Manchester City", stars: 5 }, { name: "Arsenal", stars: 5 }, { name: "Liverpool", stars: 5 }, { name: "Manchester United", stars: 5 },
+          { name: "Chelsea", stars: 4 }, { name: "Tottenham", stars: 4 }, { name: "Newcastle United", stars: 4 },
+          { name: "Aston Villa", stars: 3 }, { name: "Brighton", stars: 3 }, { name: "Leeds United", stars: 3 },
+          { name: "Everton", stars: 2 }, { name: "Crystal Palace", stars: 2 }, { name: "Fulham", stars: 2 }, { name: "Bournemouth", stars: 2 },
+          { name: "Brentford", stars: 2 }, { name: "Nottingham Forest", stars: 2 }, { name: "Sunderland", stars: 2 }, { name: "Coventry City", stars: 2 }, { name: "Ipswich Town", stars: 2 }, { name: "Hull City", stars: 2 },
+        ],
+      },
     ],
   },
   ES: {
     name: "İspanya",
     tiers: [
-      { name: "Segunda División", wageBase: 4500, teams: [
-        { name: "Real Zaragoza", stars: 2 }, { name: "Sporting Gijón", stars: 2 }, { name: "Racing Santander", stars: 2 },
-        { name: "Deportivo La Coruña", stars: 3 }, { name: "Levante", stars: 2 }, { name: "Eibar", stars: 2 }, { name: "Albacete", stars: 2 },
-      ]},
-      { name: "La Liga", wageBase: 85000, teams: [
-        { name: "Real Madrid", stars: 5 }, { name: "Barcelona", stars: 5 }, { name: "Atlético Madrid", stars: 5 },
-        { name: "Real Sociedad", stars: 4 }, { name: "Athletic Bilbao", stars: 4 }, { name: "Real Betis", stars: 3 }, { name: "Villarreal", stars: 3 },
-        { name: "Sevilla", stars: 3 }, { name: "Valencia", stars: 2 }, { name: "Girona", stars: 3 }, { name: "Osasuna", stars: 2 },
-        { name: "Celta Vigo", stars: 2 }, { name: "Getafe", stars: 2 }, { name: "Mallorca", stars: 2 },
-      ]},
+      {
+        name: "LaLiga Hypermotion", wageBase: 4500,
+        teams: [
+          { name: "Real Oviedo", stars: 3 }, { name: "Girona", stars: 3 }, { name: "Mallorca", stars: 3 }, { name: "Las Palmas", stars: 3 }, { name: "Sporting Gijón", stars: 3 },
+          { name: "Córdoba", stars: 2 }, { name: "Cádiz", stars: 2 }, { name: "Granada", stars: 2 }, { name: "Real Valladolid", stars: 2 }, { name: "Albacete", stars: 2 },
+          { name: "Leganés", stars: 2 }, { name: "Eibar", stars: 2 }, { name: "Castellón", stars: 2 }, { name: "Almería", stars: 2 }, { name: "Burgos", stars: 2 },
+          { name: "Ceuta", stars: 2 }, { name: "FC Andorra", stars: 2 }, { name: "Real Sociedad B", stars: 2 }, { name: "Tenerife", stars: 2 }, { name: "Eldense", stars: 2 },
+          { name: "Sabadell", stars: 2 }, { name: "Celta Fortuna", stars: 1 },
+        ],
+      },
+      {
+        name: "LaLiga EA Sports", wageBase: 85000,
+        teams: [
+          { name: "Real Madrid", stars: 5 }, { name: "Barcelona", stars: 5 }, { name: "Atlético Madrid", stars: 5 },
+          { name: "Villarreal", stars: 4 }, { name: "Athletic Bilbao", stars: 4 }, { name: "Real Sociedad", stars: 4 },
+          { name: "Real Betis", stars: 3 }, { name: "Celta Vigo", stars: 3 }, { name: "Sevilla", stars: 3 }, { name: "Valencia", stars: 3 },
+          { name: "Deportivo La Coruña", stars: 3 }, { name: "Málaga", stars: 3 },
+          { name: "Getafe", stars: 2 }, { name: "Osasuna", stars: 2 }, { name: "Rayo Vallecano", stars: 2 }, { name: "Espanyol", stars: 2 },
+          { name: "Elche", stars: 2 }, { name: "Deportivo Alavés", stars: 2 }, { name: "Levante", stars: 2 }, { name: "Racing de Santander", stars: 2 },
+        ],
+      },
     ],
   },
 };
@@ -88,6 +122,7 @@ const ENERGY_DRINKS = [
   { name: "Mega İçecek", cost: 100, energy: 100 },
 ];
 
+// ---------- Theme tokens ----------
 const DARK = {
   app: "bg-slate-950", blob1: "bg-emerald-600/20", blob2: "bg-amber-600/10",
   headerLabel: "text-emerald-400/70", headerTitle: "text-white",
@@ -238,6 +273,7 @@ const ACCENTS = {
   },
 };
 
+// ---------- Helpers ----------
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randFloat = (min, max) => Math.random() * (max - min) + min;
@@ -277,6 +313,8 @@ function hallOfFame(career) {
   return { label: "AMATÖR EMEKLİ", note: "Sahalardan uzaklaştın ama sevgiyle hatırlanacaksın.", chip: "bg-slate-600" };
 }
 
+// Bir oyuncunun gücüne göre gidebileceği en yüksek takım yıldızı.
+// Genç / güçsüz oyuncular direkt 5 yıldızlı devlere gidemesin diye.
 function allowedStars(overall) { return clamp(Math.floor((overall - 30) / 10) + 1, 1, 5); }
 function tierData(country, idx) { return COUNTRIES[country].tiers[idx]; }
 function tierLabel(player) {
@@ -295,10 +333,13 @@ function pickTeamFiltered(country, idx, maxStars, excludeName) {
   return list[randInt(0, list.length - 1)];
 }
 function buildLeagueTableFromPoints(country, tierIdx, playerClub, playerPoints) {
+  // Her lig 34 haftalık gerçek bir sezon uzunluğuna göre ölçekleniyor;
+  // rakiplerin puanı da oyuncunun puanıyla aynı yıldız->PPG formülüyle hesaplanıyor
+  // ki 6 haftayı da kazanan bir oyuncu "rakipler daha fazla oynamış gibi" haksız kalmasın.
   const rivals = tierData(country, tierIdx).teams
     .filter((tm) => tm.name !== playerClub)
-    .map((tm) => ({ name: tm.name, points: randInt(10, 25) + tm.stars * 11 }));
-  const table = [...rivals, { name: playerClub, points: clamp(playerPoints, 0, 140), isPlayer: true }];
+    .map((tm) => ({ name: tm.name, points: clamp(Math.round(SEASON_WEEKS * (0.55 + tm.stars * 0.35) * randFloat(0.85, 1.15)), 0, SEASON_WEEKS * 3) }));
+  const table = [...rivals, { name: playerClub, points: clamp(playerPoints, 0, SEASON_WEEKS * 3), isPlayer: true }];
   table.sort((a, b) => b.points - a.points);
   const rank = table.findIndex((t) => t.isPlayer) + 1;
   return { table, rank };
@@ -352,6 +393,7 @@ function applyLifeActivity(key, life, rel) {
   return { life: L, rel: R, msgs };
 }
 
+// ---------- Small UI pieces ----------
 function Chunky({ children, onClick, disabled, color = "amber", t, className = "" }) {
   const palette = {
     amber: t.chunkyAccent,
@@ -461,6 +503,7 @@ function FormChips({ log }) {
   );
 }
 
+// ---------- Main component ----------
 export default function FutbolcuKariyeri() {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("kk-theme") || "dark"; } catch { return "dark"; }
@@ -497,6 +540,7 @@ export default function FutbolcuKariyeri() {
   const [career, setCareer] = useState({ goals: 0, assists: 0, matches: 0, trophies: [], caps: 0, natGoals: 0, peakOverall: 0 });
   const [seasonYear, setSeasonYear] = useState(1);
 
+  // Takım seçim ekranı için taslak veriler
   const [draftStats, setDraftStats] = useState(null);
   const [draftOverall, setDraftOverall] = useState(0);
   const [selectedCountry, setSelectedCountry] = useState("TR");
@@ -571,6 +615,7 @@ export default function FutbolcuKariyeri() {
     setLife((l) => ({ ...l, enerji: clamp(l.enerji + d.energy, 0, 100) }));
   }
 
+  // ---- Altyapı (16-17 yaş) basit sezon ----
   function playYouthSeason() {
     let stats = { ...player.stats };
     const boost = stats[trainingFocus] >= 85 ? randInt(1, 2) : randInt(2, 4);
@@ -585,6 +630,7 @@ export default function FutbolcuKariyeri() {
     else { setPlayer(updated); setPhase("youth"); }
   }
 
+  // ---- Profesyonel sezon: hafta hafta antrenman + maç döngüsü ----
   function startSeasonRounds(p, skipAging = false) {
     let updated = p;
     const preStats = { ...p.stats };
@@ -673,7 +719,7 @@ export default function FutbolcuKariyeri() {
     const featuredMatches = played.length;
     const ratings = played.map((m) => m.rating);
 
-    const totalSeasonMatches = clamp(15 + tier * 5 + Math.floor(overall / 10) + randInt(-3, 3), 8, 42);
+    const totalSeasonMatches = SEASON_WEEKS;
     const backgroundMatches = Math.max(0, totalSeasonMatches - featuredMatches);
     const backgroundGoals = Math.max(0, Math.round(backgroundMatches * pos.goalFactor * (stats.sut / 99) * randFloat(0.7, 1.3) * (1 + perfMod)));
     const backgroundAssists = Math.max(0, Math.round(backgroundMatches * pos.assistFactor * (stats.pas / 99) * randFloat(0.7, 1.3) * (1 + perfMod)));
@@ -683,8 +729,11 @@ export default function FutbolcuKariyeri() {
     const totalMatches = featuredMatches + backgroundMatches;
     const avgRating = ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : clamp(6.0 + (overall - 60) / 20, 4, 9);
 
-    const winRateEstimate = clamp((overall - 40) / 110, 0.05, 0.85);
-    const backgroundPoints = Math.round(backgroundMatches * winRateEstimate * 3 + backgroundMatches * 0.24);
+    // Rakiplerle aynı yıldız->PPG formülü: oyuncunun gücü kaç yıldızlık bir takıma denkse
+    // kalan (background) haftalarda o kadar puan ortalaması bekleniyor.
+    const playerQualityStars = allowedStars(overall);
+    const backgroundPPG = 0.55 + playerQualityStars * 0.35;
+    const backgroundPoints = Math.round(backgroundMatches * backgroundPPG * randFloat(0.85, 1.15));
     const playerPoints = wins * 3 + draws * 1 + backgroundPoints;
 
     const messages = [];
@@ -1219,4 +1268,4 @@ export default function FutbolcuKariyeri() {
       </div>
     </div>
   );
-           }
+       }
