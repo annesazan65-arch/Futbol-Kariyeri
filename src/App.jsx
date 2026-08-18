@@ -10,7 +10,6 @@ const STAT_LABELS = { hiz: "HIZ", sut: "ŞUT", pas: "PAS", dribbling: "DRB", def
 const GK_LABELS = { hiz: "ÇEVİKLİK", sut: "ÇIKIŞ", pas: "DAĞITIM", dribbling: "REFLEKS", defans: "KURTARIŞ", fizik: "FZK" };
 const STAT_KEYS = Object.keys(STAT_LABELS);
 const TOTAL_ROUNDS = 6;
-const SEASON_WEEKS = 34; // her ligin gerçek sezon uzunluğu — puan tablosu buna göre ölçeklenir
 
 const POSITIONS = {
   FW: { label: "Forvet", icon: Target, weights: { hiz: .2, sut: .35, pas: .1, dribbling: .2, defans: .05, fizik: .1 }, goalFactor: .45, assistFactor: .15 },
@@ -19,13 +18,13 @@ const POSITIONS = {
   GK: { label: "Kaleci", icon: Activity, weights: { hiz: .05, sut: .05, pas: .1, dribbling: .05, defans: .55, fizik: .2 }, goalFactor: .01, assistFactor: .02 },
 };
 
-// Ülke / lig / takım veri seti — 2026-27 sezonuna göre güncel takımlar ve gerçek lig boyutları.
+// Ülke / lig / takım veri seti — 2026-27 sezonuna göre güncel takımlar ve gerçek lig boyutları/hafta sayıları.
 const COUNTRIES = {
   TR: {
     name: "Türkiye",
     tiers: [
       {
-        name: "Trendyol 1. Lig", wageBase: 3000,
+        name: "Trendyol 1. Lig", wageBase: 3000, weeks: 36,
         teams: [
           { name: "Antalyaspor", stars: 3 }, { name: "Kayserispor", stars: 3 }, { name: "Fatih Karagümrük", stars: 3 }, { name: "Bursaspor", stars: 3 },
           { name: "Boluspor", stars: 2 }, { name: "Manisa FK", stars: 2 }, { name: "Sivasspor", stars: 2 }, { name: "Pendikspor", stars: 2 },
@@ -35,7 +34,7 @@ const COUNTRIES = {
         ],
       },
       {
-        name: "Trendyol Süper Lig", wageBase: 40000,
+        name: "Trendyol Süper Lig", wageBase: 40000, weeks: 34,
         teams: [
           { name: "Galatasaray", stars: 5 }, { name: "Fenerbahçe", stars: 5 }, { name: "Beşiktaş", stars: 4 }, { name: "Trabzonspor", stars: 4 },
           { name: "Başakşehir", stars: 3 }, { name: "Samsunspor", stars: 3 }, { name: "Göztepe", stars: 3 },
@@ -50,7 +49,7 @@ const COUNTRIES = {
     name: "İngiltere",
     tiers: [
       {
-        name: "EFL Championship", wageBase: 5000,
+        name: "EFL Championship", wageBase: 5000, weeks: 46,
         teams: [
           { name: "West Ham United", stars: 4 }, { name: "Wolverhampton Wanderers", stars: 4 },
           { name: "Burnley", stars: 3 }, { name: "Sheffield United", stars: 3 }, { name: "Middlesbrough", stars: 3 }, { name: "West Bromwich Albion", stars: 3 },
@@ -62,7 +61,7 @@ const COUNTRIES = {
         ],
       },
       {
-        name: "Premier League", wageBase: 90000,
+        name: "Premier League", wageBase: 90000, weeks: 38,
         teams: [
           { name: "Manchester City", stars: 5 }, { name: "Arsenal", stars: 5 }, { name: "Liverpool", stars: 5 }, { name: "Manchester United", stars: 5 },
           { name: "Chelsea", stars: 4 }, { name: "Tottenham", stars: 4 }, { name: "Newcastle United", stars: 4 },
@@ -77,7 +76,7 @@ const COUNTRIES = {
     name: "İspanya",
     tiers: [
       {
-        name: "LaLiga Hypermotion", wageBase: 4500,
+        name: "LaLiga Hypermotion", wageBase: 4500, weeks: 42,
         teams: [
           { name: "Real Oviedo", stars: 3 }, { name: "Girona", stars: 3 }, { name: "Mallorca", stars: 3 }, { name: "Las Palmas", stars: 3 }, { name: "Sporting Gijón", stars: 3 },
           { name: "Córdoba", stars: 2 }, { name: "Cádiz", stars: 2 }, { name: "Granada", stars: 2 }, { name: "Real Valladolid", stars: 2 }, { name: "Albacete", stars: 2 },
@@ -87,7 +86,7 @@ const COUNTRIES = {
         ],
       },
       {
-        name: "LaLiga EA Sports", wageBase: 85000,
+        name: "LaLiga EA Sports", wageBase: 85000, weeks: 38,
         teams: [
           { name: "Real Madrid", stars: 5 }, { name: "Barcelona", stars: 5 }, { name: "Atlético Madrid", stars: 5 },
           { name: "Villarreal", stars: 4 }, { name: "Athletic Bilbao", stars: 4 }, { name: "Real Sociedad", stars: 4 },
@@ -325,10 +324,13 @@ function pickTeamFiltered(country, idx, maxStars, excludeName) {
   return list[randInt(0, list.length - 1)];
 }
 function buildLeagueTableFromPoints(country, tierIdx, playerClub, playerPoints) {
+  // Her lig KENDİ gerçek hafta sayısına göre ölçekleniyor (Süper Lig 34, Premier League 38,
+  // Championship 46, 1. Lig 36, Segunda 42 vb.) — rakiplerin puanı da aynı formülle hesaplanır.
+  const weeks = tierData(country, tierIdx).weeks;
   const rivals = tierData(country, tierIdx).teams
     .filter((tm) => tm.name !== playerClub)
-    .map((tm) => ({ name: tm.name, points: clamp(Math.round(SEASON_WEEKS * (0.55 + tm.stars * 0.35) * randFloat(0.85, 1.15)), 0, SEASON_WEEKS * 3) }));
-  const table = [...rivals, { name: playerClub, points: clamp(playerPoints, 0, SEASON_WEEKS * 3), isPlayer: true }];
+    .map((tm) => ({ name: tm.name, points: clamp(Math.round(weeks * (0.55 + tm.stars * 0.35) * randFloat(0.85, 1.15)), 0, weeks * 3) }));
+  const table = [...rivals, { name: playerClub, points: clamp(playerPoints, 0, weeks * 3), isPlayer: true }];
   table.sort((a, b) => b.points - a.points);
   const rank = table.findIndex((t) => t.isPlayer) + 1;
   return { table, rank };
@@ -729,7 +731,7 @@ export default function FutbolcuKariyeri() {
     const featuredMatches = played.length;
     const ratings = played.map((m) => m.rating);
 
-    const totalSeasonMatches = SEASON_WEEKS;
+    const totalSeasonMatches = typeof tier === "number" ? tierData(player.country, tier).weeks : 34;
     const backgroundMatches = Math.max(0, totalSeasonMatches - featuredMatches);
     const backgroundGoals = Math.max(0, Math.round(backgroundMatches * pos.goalFactor * (stats.sut / 99) * randFloat(0.7, 1.3) * (1 + perfMod)));
     const backgroundAssists = Math.max(0, Math.round(backgroundMatches * pos.assistFactor * (stats.pas / 99) * randFloat(0.7, 1.3) * (1 + perfMod)));
@@ -778,6 +780,8 @@ export default function FutbolcuKariyeri() {
       }
     });
 
+    // Alt ligden üst lige terfi tekliflerinin yanı sıra, üst ligdeyken de büyük kulüplerden
+    // veya yurt dışından teklif gelmeye devam eder — kariyer bir kere terfi edip durmuyor.
     let newOffer = null;
     if (tier === 0 && overall >= 55) {
       const target = pickTeamFiltered(player.country, 1, allowedStars(overall), null);
@@ -1327,4 +1331,4 @@ export default function FutbolcuKariyeri() {
       </div>
     </div>
   );
-      }
+  }
