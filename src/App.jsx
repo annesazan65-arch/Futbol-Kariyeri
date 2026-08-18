@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Trophy, Star, Zap, Target, Shield, Activity, ChevronRight, RotateCcw,
-  Flag, HeartPulse, Coins, Gift, Medal, Battery, Smile, Users, Heart,
-  Mic, Moon, PartyPopper, Sparkles, Newspaper, Baby, Home, Sun, Dumbbell, CircleDot, Lock, Palette
+  Flag, HeartPulse, Coins, Gift, Medal, Battery, Smile, Users,
+  Mic, Moon, PartyPopper, Newspaper, Home, Sun, Dumbbell, CircleDot, Lock, Palette, Wallet
 } from "lucide-react";
 
 // ---------- Data ----------
@@ -99,14 +99,6 @@ const COUNTRIES = {
       },
     ],
   },
-};
-
-const DATE_NAMES = ["Elif", "Zeynep", "Aslı", "Deniz", "Ece", "Selin", "Buse", "Mira", "Ada", "Naz"];
-const REL_STAGE = {
-  flört: { label: "Flört", chip: "bg-slate-600" },
-  iliski: { label: "İlişki", chip: "bg-pink-600" },
-  nisanli: { label: "Nişanlı", chip: "bg-amber-600" },
-  evli: { label: "Evli", chip: "bg-rose-600" },
 };
 
 const INTENSITY = {
@@ -333,9 +325,6 @@ function pickTeamFiltered(country, idx, maxStars, excludeName) {
   return list[randInt(0, list.length - 1)];
 }
 function buildLeagueTableFromPoints(country, tierIdx, playerClub, playerPoints) {
-  // Her lig 34 haftalık gerçek bir sezon uzunluğuna göre ölçekleniyor;
-  // rakiplerin puanı da oyuncunun puanıyla aynı yıldız->PPG formülüyle hesaplanıyor
-  // ki 6 haftayı da kazanan bir oyuncu "rakipler daha fazla oynamış gibi" haksız kalmasın.
   const rivals = tierData(country, tierIdx).teams
     .filter((tm) => tm.name !== playerClub)
     .map((tm) => ({ name: tm.name, points: clamp(Math.round(SEASON_WEEKS * (0.55 + tm.stars * 0.35) * randFloat(0.85, 1.15)), 0, SEASON_WEEKS * 3) }));
@@ -344,8 +333,8 @@ function buildLeagueTableFromPoints(country, tierIdx, playerClub, playerPoints) 
   const rank = table.findIndex((t) => t.isPlayer) + 1;
   return { table, rank };
 }
-function applyLifeActivity(key, life, rel) {
-  let L = { ...life }; let R = rel ? { ...rel } : null; const msgs = [];
+function applyLifeActivity(key, life) {
+  let L = { ...life }; const msgs = [];
   if (key === "rest") {
     L.enerji = clamp(L.enerji + 25, 0, 100); L.mutluluk = clamp(L.mutluluk + 5, 0, 100);
     msgs.push("Sezon arasında iyi dinlendin, enerjin yerine geldi.");
@@ -355,7 +344,6 @@ function applyLifeActivity(key, life, rel) {
     if (Math.random() < 0.15) {
       L.mutluluk = clamp(L.mutluluk - 20, 0, 100);
       msgs.push("Magazin basını gece hayatını manşete taşıdı, imajın zedelendi.");
-      if (R) { R.affection = clamp(R.affection - 15, 0, 100); msgs.push(`${R.name} bu haberden hoşlanmadı.`); }
     }
   } else if (key === "interview") {
     const confident = Math.random() < 0.5;
@@ -367,30 +355,8 @@ function applyLifeActivity(key, life, rel) {
       L.mutluluk = clamp(L.mutluluk + 5, 0, 100); L.populerlik = clamp(L.populerlik + 5, 0, 100);
       msgs.push("Alçakgönüllü açıklamaların takdir topladı.");
     }
-  } else if (key === "date" && R) {
-    R.affection = clamp(R.affection + 15, 0, 100); R.seasonsTogether += 1;
-    L.mutluluk = clamp(L.mutluluk + 10, 0, 100); L.enerji = clamp(L.enerji - 10, 0, 100);
-    msgs.push(`${R.name} ile güzel vakit geçirdin.`);
-    if (R.stage === "flört" && R.affection >= 60) { R.stage = "iliski"; msgs.push(`${R.name} ile resmi olarak birlikte oldunuz!`); }
-    else if (R.stage === "iliski" && R.affection >= 90 && R.seasonsTogether >= 3) { R.stage = "nisanli"; msgs.push(`${R.name}'e evlilik teklif ettin, nişanlandınız!`); }
-    else if (R.stage === "nisanli" && R.affection >= 85 && Math.random() < 0.5) { R.stage = "evli"; msgs.push(`${R.name} ile evlendiniz!`); }
-  } else if (key === "meet" && !R) {
-    if (Math.random() < 0.6) {
-      const nm = DATE_NAMES[randInt(0, DATE_NAMES.length - 1)];
-      R = { name: nm, stage: "flört", affection: 30, seasonsTogether: 0, hasChild: false };
-      L.mutluluk = clamp(L.mutluluk + 8, 0, 100);
-      msgs.push(`${nm} ile tanıştın, görüşmeye başladınız.`);
-    } else msgs.push("Bu sezon kimseyle tanışamadın.");
   }
-  if (R && key !== "date" && R.stage !== "evli") {
-    R.affection = clamp(R.affection - 8, 0, 100);
-    if (R.affection <= 10 && Math.random() < 0.4) { msgs.push(`${R.name} ile yollarınızı ayırdınız.`); R = null; }
-  }
-  if (R && R.stage === "evli" && !R.hasChild && Math.random() < 0.22) {
-    R.hasChild = true; L.mutluluk = clamp(L.mutluluk + 20, 0, 100);
-    msgs.push("Bebeğiniz dünyaya geldi! Aileniz büyüdü.");
-  }
-  return { life: L, rel: R, msgs };
+  return { life: L, msgs };
 }
 
 // ---------- Small UI pieces ----------
@@ -435,7 +401,7 @@ function LifeBar({ icon: Icon, label, value, grad, t }) {
     </div>
   );
 }
-function PlayerCard({ name, number, position, club, overall, stats, tier, posKey }) {
+function PlayerCard({ name, number, position, club, overall, stats, tier, posKey, value }) {
   const ct = cardTier(overall);
   return (
     <div className={`relative rounded-3xl p-4 bg-gradient-to-br ${ct.grad} border-4 ${ct.border} shadow-xl shadow-black/40 overflow-hidden`}>
@@ -449,6 +415,7 @@ function PlayerCard({ name, number, position, club, overall, stats, tier, posKey
           <p className={`font-black italic text-lg leading-tight ${ct.text}`}>#{number} {name}</p>
           <p className={`text-xs font-semibold ${ct.text} opacity-80`}>{club}</p>
           <p className={`text-[10px] font-bold ${ct.text} opacity-60 mb-1`}>{tier}</p>
+          {value != null && <p className={`text-[10px] font-black ${ct.text} opacity-90 mb-1`}>Değer: {shortMoney(value)}</p>}
           <StarRow count={starsFromOverall(overall)} />
         </div>
       </div>
@@ -478,19 +445,31 @@ function LeagueTableView({ table, rank, t }) {
     </div>
   );
 }
-function RelationshipCard({ rel, t }) {
-  if (!rel) return <div className={`flex items-center gap-2 text-xs ${t.textFaint} ${t.panelAlt2} rounded-xl px-3 py-2.5`}><Heart className="w-4 h-4" /> Şu anda bekarsın.</div>;
-  const s = REL_STAGE[rel.stage];
-  return (
-    <div className={`${t.panelAlt2} rounded-xl px-3 py-2.5`}>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className={`flex items-center gap-1.5 text-sm font-bold ${t.textMain}`}><Heart className="w-4 h-4 text-rose-400" /> {rel.name}</span>
-        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white ${s.chip}`}>{s.label}</span>
-      </div>
-      <div className={`h-1.5 w-full ${t.barTrack} rounded-full overflow-hidden mb-1`}><div className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-400" style={{ width: `${rel.affection}%` }} /></div>
-      <p className={`text-[10px] ${t.textFaint}`}>Bağlılık: {rel.affection}/100{rel.hasChild ? " · Bir çocuğunuz var" : ""}</p>
-    </div>
-  );
+function shortMoney(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(".0", "") + "M ₺";
+  if (n >= 1000) return Math.round(n / 1000) + "K ₺";
+  return n + " ₺";
+}
+function ageValueFactor(age) {
+  if (age <= 20) return 0.8 + (age - 16) * 0.05;
+  if (age <= 27) return 1.2;
+  if (age <= 30) return 1.0;
+  if (age <= 33) return 0.6;
+  return 0.3;
+}
+function computeMarketValue(overall, age) {
+  const base = Math.pow(Math.max(overall - 25, 1), 2) * 800;
+  return Math.round((base * ageValueFactor(age)) / 1000) * 1000;
+}
+function generateContract(clubStars) {
+  return { goalBonus: randInt(5, 10 + clubStars * 4), assistBonus: randInt(3, 6 + clubStars * 2) };
+}
+function makeOffer(country, toTier, target, overall, age) {
+  const val = computeMarketValue(overall, age);
+  const wage = Math.round(tierData(country, toTier).wageBase * (1 + (overall - 50) / 100));
+  const signingBonus = Math.round(val * randFloat(0.05, 0.15));
+  const contract = generateContract(target.stars);
+  return { country, toTier, club: target.name, stars: target.stars, wage, marketValue: val, signingBonus, contract };
 }
 function FormChips({ log }) {
   const chip = { W: "bg-emerald-500 text-white", D: "bg-slate-400 text-white", L: "bg-red-500 text-white" };
@@ -529,45 +508,75 @@ export default function FutbolcuKariyeri() {
     offerBox: aMode.offerBox, chunkyAccent: a.btn, chunkySelected: a.selected,
   };
 
-  const [phase, setPhase] = useState("home");
-  const [homeReturnPhase, setHomeReturnPhase] = useState("youth");
+  // ---- Kayıtlı kariyer: sayfadan çıkılsa/yenilense bile kariyer kaybolmasın ----
+  const SAVE_KEY = "kk-save";
+  function readSave() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+  const save0 = readSave();
+  const sv = (key, fallback) => (save0 && save0[key] !== undefined ? save0[key] : fallback);
+
+  const [phase, setPhase] = useState(() => sv("phase", "home"));
+  const [homeReturnPhase, setHomeReturnPhase] = useState(() => sv("homeReturnPhase", "youth"));
   const [showHelp, setShowHelp] = useState(false);
 
-  const [name, setName] = useState("");
-  const [position, setPosition] = useState("FW");
-  const [squadNumber, setSquadNumber] = useState(9);
-  const [player, setPlayer] = useState(null);
-  const [career, setCareer] = useState({ goals: 0, assists: 0, matches: 0, trophies: [], caps: 0, natGoals: 0, peakOverall: 0 });
-  const [seasonYear, setSeasonYear] = useState(1);
+  const [name, setName] = useState(() => sv("name", ""));
+  const [position, setPosition] = useState(() => sv("position", "FW"));
+  const [squadNumber, setSquadNumber] = useState(() => sv("squadNumber", 9));
+  const [player, setPlayer] = useState(() => sv("player", null));
+  const [career, setCareer] = useState(() => sv("career", { goals: 0, assists: 0, matches: 0, trophies: [], caps: 0, natGoals: 0, peakOverall: 0 }));
+  const [seasonYear, setSeasonYear] = useState(() => sv("seasonYear", 1));
+  const [wallet, setWallet] = useState(() => sv("wallet", 0));
 
   // Takım seçim ekranı için taslak veriler
-  const [draftStats, setDraftStats] = useState(null);
-  const [draftOverall, setDraftOverall] = useState(0);
-  const [selectedCountry, setSelectedCountry] = useState("TR");
-  const [chosenTeam, setChosenTeam] = useState(null);
+  const [draftStats, setDraftStats] = useState(() => sv("draftStats", null));
+  const [draftOverall, setDraftOverall] = useState(() => sv("draftOverall", 0));
+  const [selectedCountry, setSelectedCountry] = useState(() => sv("selectedCountry", "TR"));
+  const [chosenTeam, setChosenTeam] = useState(() => sv("chosenTeam", null));
 
-  const [trainingFocus, setTrainingFocus] = useState("sut");
-  const [intensity, setIntensity] = useState("orta");
-  const [lifeActivity, setLifeActivity] = useState("rest");
-  const [life, setLife] = useState({ enerji: 100, mutluluk: 65, populerlik: 5 });
-  const [relationship, setRelationship] = useState(null);
-  const [sponsorFlags, setSponsorFlags] = useState([false, false, false]);
-  const [coins, setCoins] = useState(0);
-  const [packUsed, setPackUsed] = useState(false);
+  const [trainingFocus, setTrainingFocus] = useState(() => sv("trainingFocus", "sut"));
+  const [intensity, setIntensity] = useState(() => sv("intensity", "orta"));
+  const [lifeActivity, setLifeActivity] = useState(() => sv("lifeActivity", "rest"));
+  const [life, setLife] = useState(() => sv("life", { enerji: 100, mutluluk: 65, populerlik: 5 }));
+  const [sponsorFlags, setSponsorFlags] = useState(() => sv("sponsorFlags", [false, false, false]));
+  const [coins, setCoins] = useState(() => sv("coins", 0));
+  const [packUsed, setPackUsed] = useState(() => sv("packUsed", false));
 
-  const [fixtures, setFixtures] = useState([]);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [matchLog, setMatchLog] = useState([]);
-  const [roundInjured, setRoundInjured] = useState(false);
-  const [trainingNote, setTrainingNote] = useState(null);
-  const [lastMatch, setLastMatch] = useState(null);
-  const [seasonStatsBefore, setSeasonStatsBefore] = useState(null);
-  const [seasonResult, setSeasonResult] = useState(null);
-  const [offer, setOffer] = useState(null);
-  const [pendingNextPlayer, setPendingNextPlayer] = useState(null);
+  const [fixtures, setFixtures] = useState(() => sv("fixtures", []));
+  const [currentRound, setCurrentRound] = useState(() => sv("currentRound", 1));
+  const [matchLog, setMatchLog] = useState(() => sv("matchLog", []));
+  const [roundInjured, setRoundInjured] = useState(() => sv("roundInjured", false));
+  const [trainingNote, setTrainingNote] = useState(() => sv("trainingNote", null));
+  const [lastMatch, setLastMatch] = useState(() => sv("lastMatch", null));
+  const [seasonStatsBefore, setSeasonStatsBefore] = useState(() => sv("seasonStatsBefore", null));
+  const [seasonResult, setSeasonResult] = useState(() => sv("seasonResult", null));
+  const [offer, setOffer] = useState(() => sv("offer", null));
+  const [pendingNextPlayer, setPendingNextPlayer] = useState(() => sv("pendingNextPlayer", null));
+
+  // Her önemli değişiklikte otomatik kaydet — sekme kapatılsa/yenilense bile kariyer kalır.
+  useEffect(() => {
+    const data = {
+      phase, homeReturnPhase, name, position, squadNumber, player, career, seasonYear, wallet,
+      draftStats, draftOverall, selectedCountry, chosenTeam,
+      trainingFocus, intensity, lifeActivity, life, sponsorFlags, coins, packUsed,
+      fixtures, currentRound, matchLog, roundInjured, trainingNote, lastMatch,
+      seasonStatsBefore, seasonResult, offer, pendingNextPlayer,
+    };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch {}
+  }, [
+    phase, homeReturnPhase, name, position, squadNumber, player, career, seasonYear, wallet,
+    draftStats, draftOverall, selectedCountry, chosenTeam,
+    trainingFocus, intensity, lifeActivity, life, sponsorFlags, coins, packUsed,
+    fixtures, currentRound, matchLog, roundInjured, trainingNote, lastMatch,
+    seasonStatsBefore, seasonResult, offer, pendingNextPlayer,
+  ]);
 
   function goHome() { setHomeReturnPhase(phase); setPhase("home"); }
 
+  // Adım 1: isim / forma no / mevki seçildikten sonra güç üretilir, takım seçimine geçilir.
   function goToTeamSelect() {
     const stats = {
       hiz: randInt(35, 55), sut: randInt(30, 50), pas: randInt(30, 50),
@@ -582,15 +591,16 @@ export default function FutbolcuKariyeri() {
     setPhase("team-select");
   }
 
+  // Adım 2: takım seçilince kariyer resmen başlar (altyapı yılları o kulüpte geçer).
   function confirmTeam() {
     if (!chosenTeam) return;
     const stats = draftStats;
-    setPlayer({ age: 16, country: selectedCountry, club: chosenTeam.name, clubStars: chosenTeam.stars, tier: "youth", wage: 500, stats });
+    setPlayer({ age: 16, country: selectedCountry, club: chosenTeam.name, clubStars: chosenTeam.stars, tier: "youth", wage: 500, contract: generateContract(chosenTeam.stars), stats });
     setCareer({ goals: 0, assists: 0, matches: 0, trophies: [], caps: 0, natGoals: 0, peakOverall: computeOverall(stats, position) });
     setSeasonYear(1);
-    setCoins(100); setPackUsed(false);
+    setCoins(100); setWallet(0); setPackUsed(false);
     setLife({ enerji: 100, mutluluk: 65, populerlik: 5 });
-    setRelationship(null); setSponsorFlags([false, false, false]);
+    setSponsorFlags([false, false, false]);
     setTrainingFocus(STAT_KEYS.find((k) => POSITIONS[position].weights[k] >= 0.3) || "sut");
     setPhase("youth");
   }
@@ -608,6 +618,7 @@ export default function FutbolcuKariyeri() {
     setPackUsed(true);
   }
 
+  // ---- Altyapı (16-17 yaş) basit sezon ----
   function buyEnergyDrink(idx) {
     const d = ENERGY_DRINKS[idx];
     if (coins < d.cost || life.enerji >= 100) return;
@@ -615,7 +626,6 @@ export default function FutbolcuKariyeri() {
     setLife((l) => ({ ...l, enerji: clamp(l.enerji + d.energy, 0, 100) }));
   }
 
-  // ---- Altyapı (16-17 yaş) basit sezon ----
   function playYouthSeason() {
     let stats = { ...player.stats };
     const boost = stats[trainingFocus] >= 85 ? randInt(1, 2) : randInt(2, 4);
@@ -708,7 +718,7 @@ export default function FutbolcuKariyeri() {
     const overall = computeOverall(stats, position);
     const pos = POSITIONS[position];
     let tier = player.tier, club = player.club;
-    const { life: lifeAfter, rel: relAfter, msgs: lifeMsgs } = applyLifeActivity(lifeActivity, life, relationship);
+    const { life: lifeAfter, msgs: lifeMsgs } = applyLifeActivity(lifeActivity, life);
     const perfMod = (lifeAfter.enerji - 50) / 250 + (lifeAfter.mutluluk - 50) / 300;
 
     const played = matchLog.filter((m) => !m.skipped);
@@ -729,8 +739,6 @@ export default function FutbolcuKariyeri() {
     const totalMatches = featuredMatches + backgroundMatches;
     const avgRating = ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : clamp(6.0 + (overall - 60) / 20, 4, 9);
 
-    // Rakiplerle aynı yıldız->PPG formülü: oyuncunun gücü kaç yıldızlık bir takıma denkse
-    // kalan (background) haftalarda o kadar puan ortalaması bekleniyor.
     const playerQualityStars = allowedStars(overall);
     const backgroundPPG = 0.55 + playerQualityStars * 0.35;
     const backgroundPoints = Math.round(backgroundMatches * backgroundPPG * randFloat(0.85, 1.15));
@@ -755,7 +763,11 @@ export default function FutbolcuKariyeri() {
     }
 
     const wage = Math.round(tierData(player.country, tier).wageBase * (1 + (overall - 50) / 100));
-    let coinsEarned = Math.round(wage / 40) + totalGoals * 15 + totalAssists * 10 + (trophy ? 200 : 0) + capsGain * 20;
+    const contract = player.contract || { goalBonus: 10, assistBonus: 5 };
+    const goalBonusCoins = totalGoals * contract.goalBonus;
+    const assistBonusCoins = totalAssists * contract.assistBonus;
+    let coinsEarned = Math.round(wage / 40) + goalBonusCoins + assistBonusCoins + (trophy ? 200 : 0) + capsGain * 20;
+    messages.push(`Sözleşme primin: gol başı +${contract.goalBonus} altın, asist başı +${contract.assistBonus} altın kazandırdı.`);
 
     const sponsorThresholds = [30, 60, 85];
     const newSponsorFlags = [...sponsorFlags];
@@ -769,17 +781,29 @@ export default function FutbolcuKariyeri() {
     let newOffer = null;
     if (tier === 0 && overall >= 55) {
       const target = pickTeamFiltered(player.country, 1, allowedStars(overall), null);
-      newOffer = {
-        toTier: 1, club: target.name, stars: target.stars,
-        wage: Math.round(tierData(player.country, 1).wageBase * (1 + (overall - 50) / 100)),
-      };
+      newOffer = makeOffer(player.country, 1, target, overall, player.age);
+    } else if (tier === 1 && overall >= 60) {
+      const tryForeign = overall >= 70 && Math.random() < 0.3;
+      if (tryForeign) {
+        const others = Object.keys(COUNTRIES).filter((c) => c !== player.country);
+        const foreignCountry = others[randInt(0, others.length - 1)];
+        const target = pickTeamFiltered(foreignCountry, 1, allowedStars(overall), null);
+        if (Math.random() < 0.5) newOffer = makeOffer(foreignCountry, 1, target, overall, player.age);
+      }
+      if (!newOffer) {
+        const biggerClubs = tierData(player.country, 1).teams.filter((tm) => tm.name !== club && tm.stars >= player.clubStars);
+        if (biggerClubs.length && Math.random() < 0.35) {
+          const target = biggerClubs[randInt(0, biggerClubs.length - 1)];
+          newOffer = makeOffer(player.country, 1, target, overall, player.age);
+        }
+      }
     }
 
     setPlayer({ ...player, wage });
     setLife(lifeAfter);
-    setRelationship(relAfter);
     setSponsorFlags(newSponsorFlags);
     setCoins((c) => c + coinsEarned);
+    setWallet((w) => w + wage);
     setCareer((prev) => ({
       goals: prev.goals + totalGoals, assists: prev.assists + totalAssists, matches: prev.matches + totalMatches,
       trophies: trophy ? [...prev.trophies, { year: seasonYear, name: trophy, club }] : prev.trophies,
@@ -806,17 +830,21 @@ export default function FutbolcuKariyeri() {
 
   function handleOffer(accept) {
     let updated = pendingNextPlayer;
-    if (accept && offer) updated = { ...updated, tier: offer.toTier, club: offer.club, clubStars: offer.stars, wage: offer.wage };
+    if (accept && offer) {
+      updated = { ...updated, country: offer.country, tier: offer.toTier, club: offer.club, clubStars: offer.stars, wage: offer.wage, contract: offer.contract };
+      setWallet((w) => w + offer.signingBonus);
+    }
     setOffer(null);
     setSeasonYear((y) => y + 1);
     startSeasonRounds(updated);
   }
 
   function resetGame() {
+    try { localStorage.removeItem(SAVE_KEY); } catch {}
     setPhase("create"); setPlayer(null); setName(""); setPosition("FW"); setSquadNumber(randInt(1, 99));
     setCareer({ goals: 0, assists: 0, matches: 0, trophies: [], caps: 0, natGoals: 0, peakOverall: 0 });
-    setSeasonYear(1); setSeasonResult(null); setOffer(null); setCoins(0); setPackUsed(false);
-    setLife({ enerji: 100, mutluluk: 65, populerlik: 5 }); setRelationship(null); setSponsorFlags([false, false, false]);
+    setSeasonYear(1); setSeasonResult(null); setOffer(null); setCoins(0); setWallet(0); setPackUsed(false);
+    setLife({ enerji: 100, mutluluk: 65, populerlik: 5 }); setSponsorFlags([false, false, false]);
     setDraftStats(null); setDraftOverall(0); setSelectedCountry("TR"); setChosenTeam(null);
   }
 
@@ -826,7 +854,6 @@ export default function FutbolcuKariyeri() {
     { key: "rest", label: "Dinlen", icon: Moon },
     { key: "party", label: "Gece Hayatı", icon: PartyPopper },
     { key: "interview", label: "Röportaj", icon: Mic },
-    relationship ? { key: "date", label: "Buluş", icon: Heart } : { key: "meet", label: "Tanış", icon: Sparkles },
   ];
   const resultLabel = { W: ["Kazandın!", "text-emerald-400"], D: ["Berabere", "text-slate-400"], L: ["Kaybettin", "text-red-400"] };
 
@@ -845,8 +872,11 @@ export default function FutbolcuKariyeri() {
             {player && phase !== "home" && phase !== "create" && phase !== "team-select" && (
               <>
                 <button onClick={goHome} className={`${t.iconBtn} rounded-full p-2`}><Home className="w-4 h-4" /></button>
-                <div className={`flex items-center gap-1 ${t.pill} rounded-full px-3 py-1.5`}>
+                <div className={`flex items-center gap-1 ${t.pill} rounded-full px-2.5 py-1.5`}>
                   <Coins className="w-4 h-4 text-amber-400" /><span className={`font-mono font-black text-sm ${t.pillText}`}>{coins}</span>
+                </div>
+                <div className={`flex items-center gap-1 ${t.pill} rounded-full px-2.5 py-1.5`}>
+                  <Wallet className="w-4 h-4 text-emerald-400" /><span className={`font-mono font-black text-sm ${t.pillText}`}>{shortMoney(wallet)}</span>
                 </div>
               </>
             )}
@@ -856,6 +886,7 @@ export default function FutbolcuKariyeri() {
           </div>
         </header>
 
+        {/* ---------------- HOME ---------------- */}
         {phase === "home" && (
           <div className="space-y-4">
             <Panel t={t}>
@@ -863,7 +894,7 @@ export default function FutbolcuKariyeri() {
               {player ? (
                 <>
                   <h2 className={`text-lg font-black mb-3 ${t.textMain}`}>Kaldığın yerden devam et</h2>
-                  <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} · Yaş ${player.age}`} />
+                  <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} · Yaş ${player.age}`} value={computeMarketValue(overall, player.age)} />
                   <div className="mt-4 space-y-2">
                     <Chunky t={t} onClick={() => setPhase(homeReturnPhase)} color="amber">Kariyere Devam Et <ChevronRight className="w-4 h-4" /></Chunky>
                     <Chunky t={t} onClick={resetGame} color="slate"><RotateCcw className="w-4 h-4" /> Yeni Kariyer Başlat</Chunky>
@@ -905,8 +936,8 @@ export default function FutbolcuKariyeri() {
                   <li>Her hafta önce antrenman yap, sonra maça çık.</li>
                   <li>Antrenman yoğunluğu arttıkça gelişim de sakatlık riski de artar.</li>
                   <li>Kaleci seçersen antrenman seçenekleri kaleciye özel isimlerle gelir.</li>
-                  <li>Enerjin ve mutluluğun maç performansını doğrudan etkiler; sezon içinde enerji içeceği alabilirsin.</li>
-                  <li>Sezon sonunda özel hayatına vakit ayır: dinlen, röportaj ver ya da biriyle buluş.</li>
+                  <li>Enerjin ve mutluluğun maç performansını doğrudan etkiler.</li>
+                  <li>Sezon sonunda dinlen, röportaj ver ya da gece hayatına çık — her birinin enerji/mutluluk/popülerliğe etkisi farklı.</li>
                   <li>Ligde şampiyon ol, transfer teklifi al, milli takıma çağrıl.</li>
                   <li>35 yaşında emekli ol ve kariyer ünvanını öğren.</li>
                 </ul>
@@ -915,6 +946,7 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- CREATE ---------------- */}
         {phase === "create" && (
           <Panel t={t}>
             <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-1`}>Yeni Kart Oluştur</p>
@@ -944,6 +976,7 @@ export default function FutbolcuKariyeri() {
           </Panel>
         )}
 
+        {/* ---------------- TEAM SELECT ---------------- */}
         {phase === "team-select" && draftStats && (
           <Panel t={t}>
             <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-1`}>Kulübünü Seç</p>
@@ -978,9 +1011,10 @@ export default function FutbolcuKariyeri() {
           </Panel>
         )}
 
+        {/* ---------------- YOUTH ---------------- */}
         {phase === "youth" && player && (
           <div className="space-y-4">
-            <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} · Yaş ${player.age}`} />
+            <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} · Yaş ${player.age}`} value={computeMarketValue(overall, player.age)} />
             <Panel t={t}>
               <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-2`}>Altyapı Sezonu</p>
               <p className={`text-sm ${t.textSub} mb-3`}>Henüz profesyonel değilsin. Bu sezon bir özelliğine odaklan.</p>
@@ -994,6 +1028,7 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- TRAINING ---------------- */}
         {phase === "training" && player && (
           <div className="space-y-4">
             <Panel t={t}>
@@ -1057,6 +1092,7 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- MATCH ---------------- */}
         {phase === "match" && player && (
           <div className="space-y-4">
             <Panel t={t}>
@@ -1079,6 +1115,7 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- MATCH RESULT ---------------- */}
         {phase === "matchresult" && lastMatch && player && (
           <Panel t={t}>
             {lastMatch.skipped ? (
@@ -1108,14 +1145,14 @@ export default function FutbolcuKariyeri() {
           </Panel>
         )}
 
+        {/* ---------------- OFFSEASON (life choice) ---------------- */}
         {phase === "offseason" && player && (
           <div className="space-y-4">
-            <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} özeti`} />
+            <PlayerCard name={name} number={squadNumber} position={POSITIONS[position].label} posKey={position} club={player.club} overall={overall} stats={player.stats} tier={`${tierLabel(player)} · Sezon ${seasonYear} özeti`} value={computeMarketValue(overall, player.age)} />
             <Panel t={t}>
               <LifeBar icon={Battery} label="Enerji" value={life.enerji} grad="from-sky-500 to-cyan-400" t={t} />
               <LifeBar icon={Smile} label="Mutluluk" value={life.mutluluk} grad="from-rose-500 to-pink-400" t={t} />
               <LifeBar icon={Users} label="Popülerlik" value={life.populerlik} grad="from-purple-500 to-fuchsia-400" t={t} />
-              <div className="mt-3"><RelationshipCard rel={relationship} t={t} /></div>
             </Panel>
             <Panel t={t}>
               <div className="flex items-center justify-between mb-2">
@@ -1137,6 +1174,7 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- SUMMARY ---------------- */}
         {phase === "summary" && seasonResult && player && (
           <div className="space-y-4">
             <Panel t={t}>
@@ -1183,7 +1221,7 @@ export default function FutbolcuKariyeri() {
                   <div className="space-y-1.5 mb-3">
                     {seasonResult.lifeMsgs.map((m, i) => (
                       <div key={i} className={`flex items-start gap-2 text-sm bg-rose-500/5 border border-rose-500/20 rounded-lg px-3 py-2 ${t.textSub}`}>
-                        {m.includes("Bebeğiniz") ? <Baby className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" /> : m.includes("basın") || m.includes("sponsor") ? <Newspaper className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> : <Heart className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />}
+                        {m.includes("basın") || m.includes("sponsor") ? <Newspaper className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> : <Smile className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />}
                         <span>{m}</span>
                       </div>
                     ))}
@@ -1207,18 +1245,39 @@ export default function FutbolcuKariyeri() {
           </div>
         )}
 
+        {/* ---------------- TRANSFER ---------------- */}
         {phase === "transfer" && offer && player && (
           <Panel t={t}>
             <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-1`}>Transfer Teklifi</p>
-            <h2 className={`text-lg font-black ${t.textMain} mb-4`}>{offer.club} seni istiyor!</h2>
-            <div className={`flex items-center justify-between ${t.panelAlt2} rounded-xl px-3 py-2.5 mb-2`}>
-              <span className={`text-sm ${t.textFaint} font-bold`}>Mevcut</span><span className={`text-sm font-black ${t.textSub}`}>{player.club} · {tierData(player.country, player.tier).name}</span>
+            <h2 className={`text-lg font-black ${t.textMain} mb-1`}>{offer.club} seni istiyor!</h2>
+            {offer.country !== player.country && <p className="text-xs font-bold text-amber-400 mb-3">Yurt dışından teklif! {COUNTRIES[offer.country].name}'ya transfer</p>}
+            <div className={`flex items-center justify-between ${t.panelAlt2} rounded-xl px-3 py-2.5 mb-2 ${offer.country === player.country ? "" : "mt-2"}`}>
+              <span className={`text-sm ${t.textFaint} font-bold`}>Mevcut</span><span className={`text-sm font-black ${t.textSub}`}>{player.club} · {COUNTRIES[player.country].name} {tierData(player.country, player.tier).name}</span>
             </div>
             <div className={`flex items-center justify-between ${t.offerBox} rounded-xl px-3 py-2.5 mb-2`}>
-              <span className={`text-sm ${t.label} font-bold`}>Yeni Teklif</span><span className={`text-sm font-black ${t.label}`}>{offer.club} · {tierData(player.country, offer.toTier).name}</span>
+              <span className={`text-sm ${t.label} font-bold`}>Yeni Teklif</span><span className={`text-sm font-black ${t.label}`}>{offer.club} · {COUNTRIES[offer.country].name} {tierData(offer.country, offer.toTier).name}</span>
             </div>
-            <div className="flex items-center gap-2 mb-4"><StarRow count={offer.stars} /><span className={`text-[11px] ${t.textFaint}`}>kulüp prestiji</span></div>
-            <div className={`flex items-center gap-1.5 mb-6 text-sm ${t.textFaint} font-semibold`}>Yeni sezonluk ücret: {money(offer.wage)}</div>
+            <div className="flex items-center gap-2 mb-3"><StarRow count={offer.stars} /><span className={`text-[11px] ${t.textFaint}`}>kulüp prestiji</span></div>
+
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className={`${t.scoreBox} rounded-xl px-3 py-2`}>
+                <p className={`text-[9px] uppercase tracking-widest ${t.textFaint} font-bold`}>Piyasa Değerin</p>
+                <p className={`text-sm font-black ${t.textMain}`}>{shortMoney(offer.marketValue)}</p>
+              </div>
+              <div className={`${t.scoreBox} rounded-xl px-3 py-2`}>
+                <p className={`text-[9px] uppercase tracking-widest ${t.textFaint} font-bold`}>İmza Bonusu</p>
+                <p className="text-sm font-black text-amber-400">{shortMoney(offer.signingBonus)}</p>
+              </div>
+            </div>
+            <div className={`${t.scoreBox} rounded-xl px-3 py-2 mb-3`}>
+              <p className={`text-[9px] uppercase tracking-widest ${t.textFaint} font-bold`}>Sezonluk Ücret</p>
+              <p className={`text-sm font-black ${t.textMain}`}>{money(offer.wage)}</p>
+            </div>
+            <div className={`${t.panelAlt2} rounded-xl px-3 py-2.5 mb-6`}>
+              <p className={`text-[10px] uppercase tracking-widest ${t.textFaint} font-bold mb-1`}>Yeni Sözleşme Primleri</p>
+              <p className={`text-sm ${t.textSub}`}>Gol başı <b className="text-amber-400">+{offer.contract.goalBonus} altın</b> · Asist başı <b className="text-amber-400">+{offer.contract.assistBonus} altın</b></p>
+            </div>
+
             <div className="flex gap-3">
               <Chunky t={t} onClick={() => handleOffer(false)} color="slate">Reddet, Kal</Chunky>
               <Chunky t={t} onClick={() => handleOffer(true)} color="amber">Kabul Et</Chunky>
@@ -1226,6 +1285,7 @@ export default function FutbolcuKariyeri() {
           </Panel>
         )}
 
+        {/* ---------------- RETIRED ---------------- */}
         {phase === "retired" && player && (() => {
           const hof = hallOfFame(career);
           return (
@@ -1246,7 +1306,6 @@ export default function FutbolcuKariyeri() {
                 <div className={`flex items-center justify-between text-sm ${t.panelAlt2} rounded-lg px-3 py-2 mb-2 font-semibold ${t.textSub}`}><span>Zirve Rating</span><span className="font-mono text-amber-400 font-black">{career.peakOverall}</span></div>
                 <div className={`flex items-center justify-between text-sm ${t.panelAlt2} rounded-lg px-3 py-2 font-semibold ${t.textSub}`}><span>Milli Takım Golü</span><span className="font-mono text-amber-400 font-black">{career.natGoals}</span></div>
               </Panel>
-              <Panel t={t}><p className="text-xs uppercase tracking-widest text-rose-400 font-bold mb-3">Özel Hayat</p><RelationshipCard rel={relationship} t={t} /></Panel>
               <Panel t={t}>
                 <p className={`text-xs uppercase tracking-widest ${t.label} font-bold mb-3`}>Kupa Dolabı</p>
                 {career.trophies.length === 0 ? <p className={`text-sm ${t.textFaint}`}>Kariyerinde kupa kazanamadın.</p> : (
@@ -1268,4 +1327,4 @@ export default function FutbolcuKariyeri() {
       </div>
     </div>
   );
-       }
+      }
